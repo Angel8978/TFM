@@ -1,7 +1,8 @@
-# Readme de 1. Pipeline y 2. sistema-decision:
+# Readme de 1. Pipeline y 2. sistema-decision
 
+---
 
-------------------- 1. PIPELINE -------------------
+## 1. PIPELINE
 
 # Pipeline ClinPGx — TFM Farmacogenómica
 
@@ -11,7 +12,9 @@ oficial. La revisión en sí la hace un LLM (local, con Ollama, o pegando el
 prompt a mano en ChatGPT/Claude si no tienes GPU), pero el pipeline que
 descarga y prepara los datos es 100% determinista: no llama a ninguna IA.
 
-## Estructura
+### Estructura
+
+```
 C:
 │   config.yaml
 │   prompt_template.md
@@ -63,8 +66,9 @@ C:
         ├───inventory
         ├───prompts
         └───reviews
+```
 
-## Idea general
+### Idea general
 
 Cada archivo que distribuye ClinPGx trae un TSV con los datos y un README.pdf
 con la documentación. El problema es que a veces la documentación no coincide
@@ -75,7 +79,7 @@ junta el perfil real del TSV (columnas, nulos, ejemplos de valores) con el
 texto de la documentación, y se lo pasamos a un LLM para que compare ambas
 cosas y señale discrepancias.
 
-## Fases
+### Fases
 
 1. **Descarga** (paso 01) — baja los 15 ZIPs desde la API de ClinPGx.
 2. **Extracción** (paso 02) — descomprime cada ZIP en su propia carpeta.
@@ -87,14 +91,17 @@ cosas y señale discrepancias.
 
 El paso 07 es el único que toca una IA. El resto son puro Python.
 
-## Instalación
+### Instalación
 
+```bash
 pip install -r requirements.txt
+```
 
 Si se desea ejecutar la revisión automática con Ollama, hay que
-instalar Ollama (https://ollama.com/download) y descargar uno de estos
+instalar [Ollama](https://ollama.com/download) y descargar uno de estos
 dos modelos:
 
+```bash
 # Modelo rápido (~30 s por tabla, 13/18 válidas)
 ollama pull lfm2.5:8b-a1b-q4_K_M
 
@@ -103,27 +110,32 @@ ollama pull gemma4:26b-a4b-it-q4_K_M
 
 # Por utlimo para la ultima prueba:
 ollama pull qwen3.6:35b-a3b-q4_K_M
-
--------------
+```
 
 Pipeline completo + revisión automática con Ollama:
-python run.py --ollama
 
+```bash
+python run.py --ollama
+```
 
 Ejecutar solo un paso concreto:
-python run.py --solo 05
 
+```bash
+python run.py --solo 05
+```
 
 Ejecutar desde un paso en adelante (por si algo falló a mitad):
+
+```bash
 python run.py --desde 04
+```
 
-
-## Qué se genera
+### Qué se genera
 
 Cada vez que se ejecuta el pipeline se crea una carpeta nueva dentro de `work/`
 con la fecha y hora, así que nunca pisas una ejecución anterior por accidente:
 
-
+```
 work/
 ├── latest.txt              -> apunta al run más reciente
 └── 20260115_103000/
@@ -138,9 +150,9 @@ work/
     ├── reviews/                  (un review.yaml por tabla, rellenado por ti/LLM)
     └── aggregated/
         └── tables.yaml           <- esto es lo que usas en el análisis
+```
 
-
-## Reejecutar sin repetir trabajo
+### Reejecutar sin repetir trabajo
 
 - Si ejecutas el paso 01 (descarga) dos veces, la segunda vez se salta los
   ZIPs que ya están descargados (comprueba que el fichero existe y no está
@@ -150,20 +162,21 @@ work/
   para poder cortar la ejecución a mitad y continuar otro día sin repetir
   las tablas ya revisadas.
 
-## Notas sobre el modelo de Ollama
+### Notas sobre el modelo de Ollama
 
 El nombre del modelo está escrito directamente en `scripts/07_review_ollama.py` (variable `MODELO`).
 
+---
 
-
-------------------- 2. SISTEMA-DECISIÓN -------------------
+## 2. SISTEMA-DECISIÓN
 
 # tfm-sistema-decision
 
 Sistema de soporte a la decisión clínica basado en LLM local, con y sin RAG.
 
-## Estructura
+### Estructura
 
+```
 tfm-sistema-decision/
 ├── casos_auto.py             Extrae los 10 casos de las tablas del pipeline
 ├── casos/casos.yaml          Se genera automáticamente
@@ -177,45 +190,56 @@ tfm-sistema-decision/
 ├── resultados/                Un .json por ejecución
 ├── reportes/                  Salida final
 └── run_experimento.py         Lanzador único
+```
 
-## Objetivo
+### Objetivo
 
 Evaluar el efecto del RAG (Retrieval-Augmented Generation) en la precisión
 de un LLM local al responder consultas farmacogenómicas. Se comparan
 3 modelos x 3 temperaturas x 2 modos RAG x 10 casos clínicos.
 
-## Ground truth
+### Ground truth
 
 Las respuestas correctas provienen de la base de datos ClinPGx/PharmGKB,
 concretamente del fichero `var_drug_ann.tsv`. Cada caso incluye nivel de
 evidencia (1A-4), significancia clínica, recomendación y PMID.
 
-## Requisitos
+### Requisitos
 
 - Python 3.11+
 - Ollama con los 3 modelos descargados:
-  - qwen3.5:2b-q4_K_M
-  - lfm2.5:8b-a1b-q4_K_M
-  - gemma4:26b-a4b-it-q4_K_M
+  - `qwen3.5:2b-q4_K_M`
+  - `lfm2.5:8b-a1b-q4_K_M`
+  - `gemma4:26b-a4b-it-q4_K_M`
 - El pipeline `tfm-pipeline` debe existir como carpeta hermana y estar ejecutado.
 
-## Instalación
+### Instalación
 
+```bash
 pip install -r requirements.txt
+```
 
-
-## Uso
+### Uso
 
 Experimento completo (180 ejecuciones):
+
+```bash
 python run_experimento.py
+```
 
 Prueba rápida con un solo modelo:
+
+```bash
 python run_experimento.py --solo-modelo lfm2.5:8b-a1b-q4_K_M
+```
 
 Solo generar el reporte:
-python run_experimento.py --reporte
 
-## Salida
+```bash
+python run_experimento.py --reporte
+```
+
+### Salida
 
 En `reportes/`:
 
@@ -223,7 +247,7 @@ En `reportes/`:
 - `tabla_global.csv`
 - `barras.png`, `heatmap.png`, `lineas.png`
 
-## Verificador
+### Verificador
 
 Cada respuesta se evalúa con 3 checks:
 
@@ -231,9 +255,9 @@ Cada respuesta se evalúa con 3 checks:
 - **C3**: el nivel de evidencia coincide con el ground truth.
 - **C6**: no alucina (el PMID citado existe en el contexto).
 
-Veredictos: PASS (los 3 checks OK), FAIL (alguno falla), ABSTENCION
+Veredictos: **PASS** (los 3 checks OK), **FAIL** (alguno falla), **ABSTENCION**
 (el modelo reconoce no tener información suficiente).
 
-## Nota
+### Nota
 
 Este proyecto no forma parte del pipeline ETL. Solamente utiliza el resultado del pipeline, ubicado en una carpeta separada.
